@@ -1,10 +1,8 @@
-const Neode = require('neode');
-
 const neo4j = require('neo4j-driver').v1;
 
 const uri = 'bolt://tatum-union-yellow-muriel.graphstory.services:7687';
 const user = 'username';
-const password = 'password';
+const password = 'pw';
 
 const driver = neo4j.driver(uri, neo4j.auth.basic(user, password));
 
@@ -31,7 +29,6 @@ function addProduct(ctx) {
       session.close();
       ctx.body = result.records[0].get(0).toString();
       ctx.status = 200;
-      console.log(ctx);
   }).catch(error => {
     console.log('herro mr error');
     console.log(error);
