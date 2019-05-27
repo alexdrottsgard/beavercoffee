@@ -3,8 +3,8 @@ const Neode = require('neode');
 const neo4j = require('neo4j-driver').v1;
 
 const uri = 'bolt://tatum-union-yellow-muriel.graphstory.services:7687';
-const user = 'axelandr';
-const password = 'OBRAtRGWY1gvxKJOQz7JG';
+const user = 'username';
+const password = 'password';
 
 const driver = neo4j.driver(uri, neo4j.auth.basic(user, password));
 
