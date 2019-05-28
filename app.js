@@ -4,7 +4,7 @@ const koaRouter = require('koa-router');
 const Koa = require('koa');
 const router = koaRouter();
 
-const { getAll, addProduct } = require('./queries');
+const { getAll, addProduct, getOrdersServedByEmploye, getEmployeeListing } = require('./queries');
 
 const app = new Koa();
 
@@ -15,6 +15,10 @@ app
 router
 
   .get('/', getAll)
+
+  .get('/getOrdersFromEmployee/:name', getOrdersServedByEmployee)
+
+  .get('getEmployeeListing/:coffeeShop', getEmployeeListing)
 
   .post('/addProduct/', addProduct);
 
