@@ -4,7 +4,7 @@ const koaRouter = require('koa-router');
 const Koa = require('koa');
 const router = koaRouter();
 
-const { getAll, addProduct, getOrdersServedByEmploye, getEmployeeListing } = require('./queries');
+const { getAll, addProduct, getOrdersServedByEmployee, getEmployeeListing } = require('./queries');
 
 const app = new Koa();
 

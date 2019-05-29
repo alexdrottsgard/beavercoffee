@@ -45,56 +45,47 @@ function addProduct(ctx) {
   });
 }
 
-function getOrdersServedByEmployee(ctx) {
+async function getOrdersServedByEmployee(ctx) {
   const session = driver.session();
   const { name } = ctx.params;
   const statement = `MATCH (:Employee {name: '${name}'})-[:ENTERED]->(o:Order) RETURN o`
+  const result = await session.run(statement);
+  session.close();
 
-  return session.run(statement)
-    .then(result => {
-      let orders = [];
-      result.records.forEach(element => {
-        let orderId = element.get(0).identity.low; //ORDER ID
-        let totalPrice = element.get(0).properties.price.low; //ORDER TOTAL PRICE
-        let products = getProductsFromOrder(orderId);
-        
-        orders.push(
-          {
-            id: orderId,
-            totalPrice: totalPrice,
-            products: products.then(result => { return result })
-          }
-        );
-      });
-      session.close();
-      ctx.body = orders;
-      ctx.status = 200;
-    }).catch(error => {
-      console.log('herro mr error');
-      console.log(error);
+  const orders = [];
+  for (const element of result.records) {
+    const orderId = element.get(0).identity.low; //ORDER ID
+    const totalPrice = element.get(0).properties.price.low; //ORDER TOTAL PRICE
+    const product = await getProductsFromOrder(orderId);
+    orders.push({
+      id: orderId,
+      totalPrice: totalPrice,
+      products: product
     });
+  }
+
+  ctx.body = orders;
+  ctx.status = 200;
 }
 
-function getProductsFromOrder(orderId) {
-  return new Promise(function(resolve, reject) {
-    let products = [];
-    const session = driver.session();
-    const statement = `MATCH (o:Order)-[c:CONTAINS]->(p:Product) WHERE ID(o) = ${orderId} RETURN c,p`
-    session.run(statement)
-      .then(result => {
-        result.records.forEach(element => {
-          products.push(
-            {
-              name: element.get("p").properties.name,
-              price: element.get("p").properties.price.low,
-              amount: element.get("c").properties.amount.low
-            }
-          )
-        });
-        session.close();
-        resolve(products);
-      });  
+async function getProductsFromOrder(orderId) {
+  const session = driver.session();
+  const statement = `MATCH (o:Order)-[c:CONTAINS]->(p:Product) WHERE ID(o) = ${orderId} RETURN c,p`
+  const result = await session.run(statement);
+  session.close();
+
+  const products = [];
+  result.records.forEach(element => {
+    products.push(
+      {
+        name: element.get("p").properties.name,
+        price: element.get("p").properties.price.low,
+        amount: element.get("c").properties.amount.low
+      }
+    );
   });
+
+  return products;
 }
 
 function getEmployeeListing(ctx) {
