@@ -1,8 +1,8 @@
 const neo4j = require('neo4j-driver').v1;
 
 const uri = 'bolt://tatum-union-yellow-muriel.graphstory.services:7687';
-const user = 'elmol';
-const password = 'P9okolKJ3dlvJCB8OABeDB';
+const user = '';
+const password = '';
 
 const driver = neo4j.driver(uri, neo4j.auth.basic(user, password));
 
@@ -31,7 +31,6 @@ function getCustomerListing(ctx) {
           let joinDate = element.get('c').properties.joinDate.year.low + '-' + 
           element.get('c').properties.joinDate.month.low + '-' + 
           element.get('c').properties.joinDate.day.low; 
-          console.log(joinDate);
           if (joinDate.localeCompare(qStartDate) != -1 && joinDate.localeCompare(qEndDate) != 1) {
             returnList.push(
               {
@@ -74,9 +73,6 @@ function addEmployee(ctx) {
     `year: ${data.endDate.year},
     month: ${data.endDate.month},
     day: ${data.endDate.day}`;
-
-  // endDate = JSON.stringify(endDate);
-  console.log(endDate);
 
   const statement = `CREATE (e:Employee { name: '${data.name}', SSN: '${data.SSN}', startDate: dateTime(), endDate: dateTime({${endDate}}), percentage: ${data.percentage}}) RETURN e`
   return session.run(statement)
