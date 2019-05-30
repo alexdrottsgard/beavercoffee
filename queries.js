@@ -1,14 +1,14 @@
 const neo4j = require('neo4j-driver').v1;
 
-const uri = 'bolt://tatum-union-yellow-muriel.graphstory.services:7687';
-const user = 'filhefor';
-const password = 'ldkyQWNQBr2QTphbcHtUwBMF4ai';
+const uri = process.env.uri;
+const user = process.env.username;
+const password = process.env.password;
 
 const driver = neo4j.driver(uri, neo4j.auth.basic(user, password));
 
 
 function getAll(ctx) {
-  const statement = 'MATCH (n) RETURN n';
+  const statement = 'MATCH (n) RETURN n LIMIT 25';
   const session = driver.session();
 
   return session.run(statement)
@@ -30,6 +30,37 @@ function getAll(ctx) {
   });
 }
 
+function getCustomerListing(ctx) {
+  const session = driver.session();
+  const { managerId, qStartDate, qEndDate } = ctx.params;
+  const statement = `MATCH (c:Customer)-[:MEMBER_OF]->(:CoffeeShop)<-[:WORKS_AT]-(man:Employer) WHERE ID(man) = ${managerId} RETURN c`
+  return session.run(statement)
+    .then(result => {
+      let returnList = [];
+      result.records.forEach(element => {
+          let joinDate = element.get('c').properties.joinDate.year.low + '-' +
+          element.get('c').properties.joinDate.month.low + '-' +
+          element.get('c').properties.joinDate.day.low;
+          if (joinDate.localeCompare(qStartDate) != -1 && joinDate.localeCompare(qEndDate) != 1) {
+            returnList.push(
+              {
+                name: element.get('c').properties.name,
+                SSN: element.get('c').properties.SSN,
+                nbrOfOrders: element.get('c').properties.nbrOfOrders == null ? null : element.get('c').properties.nbrOfOrders.low,
+                occupation: element.get('c').properties.occupation
+              }
+            )
+          }
+      });
+      session.close();
+      ctx.body = returnList;
+      ctx.status = 200;
+    }).catch(error => {
+      console.log(error);
+    });
+
+}
+
 function addProduct(ctx) {
   const session = driver.session();
   const data = ctx.request.body;
@@ -46,62 +77,59 @@ function addProduct(ctx) {
 }
 
 /**
- * Get all orders served by an employee for a specified time period. 
+ * Get all orders served by an employee for a specified time period.
  * Query parameters are:
- * TODO: EmployerID (the location manager or corporate sales manager that requests the info)
+ * EmployerID (the location manager or corporate sales manager that requests the info)
  * EmployeeName (the employee which orders to get)
- * @param {query parameters} ctx 
+ * @param {query parameters} ctx
  */
-function getOrdersServedByEmployee(ctx) {
+async function getOrdersServedByEmployee(ctx) {
   const session = driver.session();
-  const { name } = ctx.params;
-  const statement = `MATCH (:Employee {name: '${name}'})-[:ENTERED]->(o:Order) RETURN o`
+  const { name, managerId, qStartDate, qEndDate } = ctx.params;
+  const statement = `MATCH (man: Employer)-[:WORKS_AT]->(:CoffeeShop)<-[:WORKS_AT]-(:Employee {name: '${name}'})-[:ENTERED]->(o:Order) WHERE ID(man)=${Number(managerId)} RETURN o`;
+  const result = await session.run(statement);
+  session.close();
 
-  return session.run(statement)
-    .then(result => {
-      let orders = [];
-      result.records.forEach(element => {
-        let orderId = element.get(0).identity.low; //ORDER ID
-        let totalPrice = element.get(0).properties.price.low; //ORDER TOTAL PRICE
-        let products = getProductsFromOrder(orderId);
-        
-        orders.push(
-          {
-            id: orderId,
-            totalPrice: totalPrice,
-            products: products.then(result => { return result })
-          }
-        );
+  const orders = [];
+  for (const element of result.records) {
+    const orderId = element.get(0).identity.low; //ORDER ID
+    const totalPrice = element.get(0).properties.price.low; //ORDER TOTAL PRICE
+    const product = await getProductsFromOrder(orderId);
+
+    const orderProperties = element.get('o').properties;
+    const orderCreated = `${orderProperties.createdAt.year.low}-${orderProperties.createdAt.month.low}-${orderProperties.createdAt.day.low}`;
+
+    if (orderCreated.localeCompare(qStartDate) != -1 && orderCreated.localeCompare(qEndDate) != 1) {
+      orders.push({
+        id: orderId,
+        totalPrice: totalPrice,
+        products: product
       });
-      session.close();
-      ctx.body = orders;
-      ctx.status = 200;
-    }).catch(error => {
-      console.log('herro mr error');
-      console.log(error);
-    });
+    }
+  }
+
+  ctx.body = orders;
+  ctx.status = 200;
 }
 
-function getProductsFromOrder(orderId) {
-  return new Promise(function(resolve, reject) {
-    let products = [];
-    const session = driver.session();
-    const statement = `MATCH (o:Order)-[c:CONTAINS]->(p:Product) WHERE ID(o) = ${orderId} RETURN c,p`
-    session.run(statement)
-      .then(result => {
-        result.records.forEach(element => {
-          products.push(
-            {
-              name: element.get("p").properties.name,
-              price: element.get("p").properties.price.low,
-              amount: element.get("c").properties.amount.low
-            }
-          )
-        });
-        session.close();
-        resolve(products);
-      });  
+async function getProductsFromOrder(orderId) {
+  const session = driver.session();
+  const statement = `MATCH (o:Order)-[c:CONTAINS]->(p:Product) WHERE ID(o) = ${orderId} RETURN c,p`
+  const result = await session.run(statement);
+  session.close();
+
+  const products = [];
+  result.records.forEach(element => {
+    products.push(
+      {
+        name: element.get("p").properties.name,
+        price: element.get("p").properties.price.low,
+        amount: element.get("c").properties.amount.low
+      }
+    );
   });
+
+  return products;
 }
 
 /**
@@ -109,7 +137,7 @@ function getProductsFromOrder(orderId) {
  * Query parameters are:
  * managerId (so you only get employees that works at the same location as him)
  * qStartDate and qEndDate (to only get employees that worked sometime during this time period)
- * @param {query parameters} ctx 
+ * @param {query parameters} ctx
  */
 function getEmployeeListing(ctx) {
   const session = driver.session();
@@ -123,12 +151,12 @@ function getEmployeeListing(ctx) {
       //For all employees returned
       result.records.forEach(element => {
         // (Fullösning) convert datetime object to string so we can compare employees startDate with the query dates
-        let startDate = element.get("e").properties.startDate.year.low + 
-        '-' + element.get("e").properties.startDate.month.low + '-' + 
+        let startDate = element.get("e").properties.startDate.year.low +
+        '-' + element.get("e").properties.startDate.month.low + '-' +
         element.get("e").properties.startDate.day.low;
 
-        let endDate = element.get("e").properties.endDate.year.low + 
-        '-' + element.get("e").properties.endDate.month.low + '-' + 
+        let endDate = element.get("e").properties.endDate.year.low +
+        '-' + element.get("e").properties.endDate.month.low + '-' +
         element.get("e").properties.endDate.day.low;
 
         // If employees startDate is between the query dates, create and add employee object in return list
@@ -158,7 +186,7 @@ function getEmployeeListing(ctx) {
  * query parameters are:
  * managerId (only look at ingredients in his locations stock)
  * ingredientName
- * @param {query parameters} ctx 
+ * @param {query parameters} ctx
  */
 function getStockQuantityForIngredient(ctx) {
   const session = driver.session();
@@ -183,7 +211,7 @@ function getStockQuantityForIngredient(ctx) {
  * Query parameters are:
  * managerId (only get sales from his locations)
  * startDate and endDate (only get sales that was created between these dates)
- * @param {query parameters} ctx 
+ * @param {query parameters} ctx
  */
 function getAllSales(ctx) {
   const session = driver.session();
@@ -194,7 +222,7 @@ function getAllSales(ctx) {
     .then(result => {
       let manager = result.records[0].get("man");
       let country = result.records[0].get("c").properties.country; // CoffeeShops country
-      let city = result.records[0].get("c").properties.cityAddress; // CoffeeShops city 
+      let city = result.records[0].get("c").properties.cityAddress; // CoffeeShops city
       let totalSales = 0.0;
       // For each returned order
       result.records.forEach(element => {
@@ -205,11 +233,11 @@ function getAllSales(ctx) {
         // If the order was created sometime between inputs startDate/endDate, add orders price to totalSales variable
         if (createdAt.localeCompare(startDate != -1) && createdAt.localeCompare(endDate) != 1) {
           totalSales += element.get('o').properties.price.low == null ? element.get('o').properties.price : element.get('o').properties.price.low;
-        } 
+        }
       });
       session.close();
       ctx.body = {
-        location: 
+        location:
         {
           country: manager.properties.position === "Corporate Sales Manager" ? "All countries" : country,
           city: manager.properties.position === "Corporate Sales Manager" ? "All cities" : city
@@ -228,7 +256,7 @@ function getAllSales(ctx) {
  * employerId (the employer that makes the comment)
  * employeeName (the employee he comments on)
  * comment (the comment)
- * @param {request body} ctx 
+ * @param {request body} ctx
  */
 function addCommentOnEmployee(ctx) {
   const session = driver.session();
@@ -265,14 +293,14 @@ function addCommentOnEmployee(ctx) {
  * managerId (get only sales from his location)
  * products (a list of product names)
  * qStartDate and qEndDate (the specified time period)
- * @param {request body} ctx 
+ * @param {request body} ctx
  */
 function getSalesFromProducts(ctx) {
   const session = driver.session();
   const data = ctx.request.body;
   const statement = `MATCH (man:Employer)-[:WORKS_AT]->(c:CoffeeShop)<-[:WORKS_AT]-()
   -[:ENTERED]->(o:Order)-[r:CONTAINS]->(p:Product) WHERE ID(man) = ${data.managerId} RETURN man,o,c,r,p`
-  
+
   return session.run(statement)
     .then(result => {
       let manager = result.records[0].get("man");
@@ -281,7 +309,7 @@ function getSalesFromProducts(ctx) {
       // for each record from the cypher query
       result.records.forEach(element => {
         // convert orders createdAt object to string
-        let orderCreated = element.get("o").properties.createdAt.year.low + 
+        let orderCreated = element.get("o").properties.createdAt.year.low +
         "-" + element.get("o").properties.createdAt.month.low + "-" +
         element.get("o").properties.createdAt.day.low;
 
@@ -292,12 +320,12 @@ function getSalesFromProducts(ctx) {
         if (data.products.includes(product.properties.name)) {
           if (orderCreated.localeCompare(data.qStartDate) != -1 && orderCreated.localeCompare(data.qEndDate) != 1) {
             totalSales += amount * (product.properties.price.low == null ? product.properties.price : product.properties.price.low);
-          } 
-        }   
+          }
+        }
       });
       session.close();
       ctx.body = {
-        location: 
+        location:
         {
           country: manager.properties.position === "Corporate Sales Manager" ? "All countries" : coffeeShop.properties.country,
           city: manager.properties.position === "Corporate Sales Manager" ? "All cities" : coffeeShop.properties.cityAddress
@@ -322,13 +350,13 @@ function getSalesFromProducts(ctx) {
  * price (price for this product)
  * amount (how many of this product the customer ordered)
  * list of ingredients for this product
- * @param {request body} ctx 
+ * @param {request body} ctx
  */
 function addOrder(ctx) {
   const session = driver.session();
   const data = ctx.request.body;
   // Match employee, customer and coffeeshop's stock and create order with relationshops to employee (entered) and customer (placed)
-  const statement = `MATCH (e:Employee {name: '${data.employeeName}'})-[:WORKS_AT]->(:CoffeeShop)-[:HAS]->(s:Stock),(cust {name: '${data.customerName}'}) 
+  const statement = `MATCH (e:Employee {name: '${data.employeeName}'})-[:WORKS_AT]->(:CoffeeShop)-[:HAS]->(s:Stock),(cust {name: '${data.customerName}'})
   CREATE (e)-[:ENTERED]->(o:Order {createdAt: datetime(), price: 0.0})<-[:PLACED]-(cust) RETURN o,s,cust`
   return session.run(statement)
     .then(result => {
@@ -337,7 +365,7 @@ function addOrder(ctx) {
       if (result.records[0].get("cust").labels[0] === "Employee") {
         discount = 0.9;
       }
-      let stockId = result.records[0].get("s").identity.low; 
+      let stockId = result.records[0].get("s").identity.low;
       let orderId = result.records[0].get("o").identity.low;
       let customerId = result.records[0].get("cust").identity.low;
       // For each product object in request body
@@ -346,7 +374,7 @@ function addOrder(ctx) {
         // Also update customers nbrOfOrders with product's amount.
         // Then create product node and relationship to order.
         const pStatement = `MATCH (o:Order),(customer) WHERE ID(o) = ${orderId} AND ID(customer) = ${customerId}
-        SET o.price = o.price + ${product.price} * ${product.amount} * ${discount} 
+        SET o.price = o.price + ${product.price} * ${product.amount} * ${discount}
         SET customer.nbrOfOrders = customer.nbrOfOrders + ${product.amount}
         CREATE (p:Product {name: '${product.productName}', price: ${product.price}})<-[r:CONTAINS {amount: ${product.amount}}]-(o) RETURN o`;
         session.run(pStatement)
@@ -371,7 +399,7 @@ function addOrder(ctx) {
 function addCustomer(ctx) {
   const session = driver.session();
   const data = ctx.request.body;
-  const statement = `MATCH (em {name: '${data.employeeName}'})-[:WORKS_AT]->(cs:CoffeeShop) 
+  const statement = `MATCH (em {name: '${data.employeeName}'})-[:WORKS_AT]->(cs:CoffeeShop)
   CREATE (c:Customer {joinDate: datetime(), name: '${data.name}', SSN: ${data.SSN}, zipCode: '${data.zipCode}', occupation: '${data.occupation}', nbrOfOrders: 0})
   -[:MEMBER_OF]->(cs) RETURN c`
   return session.run(statement)
@@ -456,6 +484,24 @@ function updateStockQuantityForIngredient(ctx) {
       }
       ctx.status = 200;
     }).catch(error => {
+      console.log(error)
+    });
+}
+function addEmployee(ctx) {
+  const session = driver.session();
+  const data = ctx.request.body;
+  const endDate =
+    `year: ${data.endDate.year},
+    month: ${data.endDate.month},
+    day: ${data.endDate.day}`;
+
+  const statement = `CREATE (e:Employee { name: '${data.name}', SSN: '${data.SSN}', startDate: dateTime(), endDate: dateTime({${endDate}}), percentage: ${data.percentage}}) RETURN e`
+  return session.run(statement)
+    .then(result => {
+      session.close();
+      ctx.body = result.records[0].get(0).toString();
+      ctx.status = 200;
+    }).catch(error => {
       console.log(error);
     });
 }
@@ -477,7 +523,7 @@ function getEmployee(ctx) {
 
 function getCustomer(ctx) {
   const session = driver.session();
-  const { managerId, customerName} = ctx.params;
+  const { managerId, customerName } = ctx.params;
   const statement = `MATCH (man: Employer)-[:WORKS_AT]->(:CoffeeShop)
   <-[:MEMBER_OF]-(c:Customer {name: '${customerName}'}) WHERE ID(man) = ${managerId} RETURN c`
   return session.run(statement)
@@ -491,20 +537,22 @@ function getCustomer(ctx) {
 }
 
 module.exports = {
-  getAll, 
-  addProduct, 
-  getOrdersServedByEmployee, 
-  getEmployeeListing, 
-  getStockQuantityForIngredient, 
-  getAllSales, 
-  addCommentOnEmployee, 
-  getSalesFromProducts, 
+  getAll,
+  addProduct,
+  addEmployee,
+  getOrdersServedByEmployee,
+  getEmployeeListing,
+  getStockQuantityForIngredient,
+  getAllSales,
+  addCommentOnEmployee,
+  getSalesFromProducts,
   addOrder,
   addCustomer,
   addIngredientToStock,
   updateEmployeeData,
   updateCustomerData,
   updateStockQuantityForIngredient,
+  getCustomerListing,
   getEmployee,
   getCustomer
 }

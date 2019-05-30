@@ -1,13 +1,14 @@
+require('dotenv').config()
 const koaLogger = require('koa-logger');
 const koaBodyParser = require('koa-bodyparser');
 const koaRouter = require('koa-router');
 const Koa = require('koa');
 const router = koaRouter();
 
-const { getAll, addProduct, getOrdersServedByEmployee,
-   getEmployeeListing, getStockQuantityForIngredient,
-  getAllSales, addCommentOnEmployee, getSalesFromProducts, 
-  addOrder, addCustomer, addIngredientToStock, updateEmployeeData, 
+const { getAll, addProduct, addEmployee, getOrdersServedByEmployee,
+  getEmployeeListing, getCustomerListing, getStockQuantityForIngredient,
+  getAllSales, addCommentOnEmployee, getSalesFromProducts,
+  addOrder, addCustomer, addIngredientToStock, updateEmployeeData,
   updateCustomerData, updateStockQuantityForIngredient, getEmployee,
   getCustomer
 } = require('./queries');
@@ -22,7 +23,7 @@ router
 
   .get('/', getAll)
 
-  .get('/getOrdersFromEmployee/:name', getOrdersServedByEmployee)
+  .get('/getOrdersFromEmployee/:name/:managerId/:qStartDate/:qEndDate', getOrdersServedByEmployee)
 
   .get('/getEmployeeListing/:managerId/:qStartDate/:qEndDate', getEmployeeListing)
 
@@ -30,9 +31,15 @@ router
 
   .get('/getAllSales/:managerId/:startDate/:endDate', getAllSales)
 
-  .post('/addComment/', addCommentOnEmployee)
+  .get('/getEmployee/:managerId/:employeeName', getEmployee)
+
+  .get('/getCustomer/:managerId/:customerName', getCustomer)
+
+  .get('/getCustomerListing/:managerId/:qStartDate/:qEndDate', getCustomerListing)
 
   .get('/getSalesFromProducts/', getSalesFromProducts)
+
+  .post('/addComment/', addCommentOnEmployee)
 
   .post('/addOrder', addOrder)
 
@@ -46,20 +53,17 @@ router
 
   .post('/updateStockQuantityForIngredient', updateStockQuantityForIngredient)
 
-  .get('/getEmployee/:managerId/:employeeName', getEmployee)
-
-  .get('/getCustomer/:managerId/:customerName', getCustomer)
+  .post('/addEmployee/', addEmployee)
 
   .post('/addProduct/', addProduct);
 
-
-app.use(async (ctx, next) => {
-  try {
-    await next();
-  } catch (err) {
-    ctx.status = err.code || 500;
-    ctx.type = err.type || 'auto';
-    ctx.body = err.message;
+  app.use(async (ctx, next) => {
+    try {
+      await next();
+    } catch (err) {
+      ctx.status = err.code || 500;
+      ctx.type = err.type || 'auto';
+      ctx.body = err.message;
   }
 });
 app.use(router.routes()).use(router.allowedMethods());
