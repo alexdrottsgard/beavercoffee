@@ -1,5 +1,8 @@
 # beavercoffee
 
+## requirements
+node and npm
+
 ## installation
 After clone, do the following command to install the dependencies
 ```bash
