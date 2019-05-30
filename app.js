@@ -4,7 +4,9 @@ const koaRouter = require('koa-router');
 const Koa = require('koa');
 const router = koaRouter();
 
-const { getAll, addProduct, getOrdersServedByEmployee, getEmployeeListing } = require('./queries');
+const { getAll, addProduct, addEmployee,
+    getCustomerListing, getOrdersServedByEmployee, getEmployeeListing
+  } = require('./queries');
 
 const app = new Koa();
 
@@ -20,14 +22,17 @@ router
 
   .get('getEmployeeListing/:coffeeShop', getEmployeeListing)
 
+  .get('/getCustomerListing/:managerId/:qStartDate/:qEndDate', getCustomerListing)
+  .post('/addEmployee/', addEmployee)
   .post('/addProduct/', addProduct);
 
 
-app.use(async (ctx, next) => {
-  try {
-    await next();
-  } catch (err) {
-    ctx.status = err.code || 500;
+
+  app.use(async (ctx, next) => {
+    try {
+      await next();
+    } catch (err) {
+      ctx.status = err.code || 500;
     ctx.type = err.type || 'auto';
     ctx.body = err.message;
   }
