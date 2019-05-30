@@ -13,9 +13,19 @@ function getAll(ctx) {
 
   return session.run(statement)
   .then(result => {
-    console.log('Bolt result: ' + result.records[0].get(0).toString());
+    //console.log('Bolt result: ' + result.records[0].get(0).toString());
+    let listReturn = [];
+    result.records.forEach(element => {
+      listReturn.push(
+        {
+          node: {
+            label: element.get(0).labels[0],
+            properties: element.get(0).properties
+          }
+        });
+    });
     session.close();
-    ctx.body = result.records[0].get(0).toString();
+    ctx.body = listReturn;
     ctx.status = 200;
   });
 }
@@ -66,6 +76,55 @@ function addProduct(ctx) {
   });
 }
 
+async function getOrdersServedByEmployee(ctx) {
+  const session = driver.session();
+  const { name, managerId, qStartDate, qEndDate } = ctx.params;
+  const statement = `MATCH (man: Employer)-[:WORKS_AT]->(:CoffeeShop)<-[:WORKS_AT]-(:Employee {name: '${name}'})-[:ENTERED]->(o:Order) WHERE ID(man)=${Number(managerId)} RETURN o`;
+  const result = await session.run(statement);
+  session.close();
+
+  const orders = [];
+  for (const element of result.records) {
+    const orderId = element.get(0).identity.low; //ORDER ID
+    const totalPrice = element.get(0).properties.price.low; //ORDER TOTAL PRICE
+    const product = await getProductsFromOrder(orderId);
+
+    const orderProperties = element.get('o').properties;
+    const orderCreated = `${orderProperties.createdAt.year.low}-${orderProperties.createdAt.month.low}-${orderProperties.createdAt.day.low}`;
+
+    if (orderCreated.localeCompare(qStartDate) != -1 && orderCreated.localeCompare(qEndDate) != 1) {
+      orders.push({
+        id: orderId,
+        totalPrice: totalPrice,
+        products: product
+      });
+    }
+  }
+
+  ctx.body = orders;
+  ctx.status = 200;
+}
+
+async function getProductsFromOrder(orderId) {
+  const session = driver.session();
+  const statement = `MATCH (o:Order)-[c:CONTAINS]->(p:Product) WHERE ID(o) = ${orderId} RETURN c,p`
+  const result = await session.run(statement);
+  session.close();
+
+  const products = [];
+  result.records.forEach(element => {
+    products.push(
+      {
+        name: element.get("p").properties.name,
+        price: element.get("p").properties.price.low,
+        amount: element.get("c").properties.amount.low
+      }
+    );
+  });
+
+  return products;
+}
+
 function addEmployee(ctx) {
   const session = driver.session();
   const data = ctx.request.body;
@@ -86,5 +145,5 @@ function addEmployee(ctx) {
 }
 
 module.exports = {
-  getAll, getCustomerListing, addProduct, addEmployee
+  getAll, getCustomerListing, getOrdersServedByEmployee, addProduct, addEmployee
 }
