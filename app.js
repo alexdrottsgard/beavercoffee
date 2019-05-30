@@ -4,7 +4,13 @@ const koaRouter = require('koa-router');
 const Koa = require('koa');
 const router = koaRouter();
 
-const { getAll, addProduct, getOrdersServedByEmployee, getEmployeeListing, getStockQuantityForIngredient, getAllSales, addCommentOnEmployee, getSalesFromProducts, addOrder } = require('./queries');
+const { getAll, addProduct, getOrdersServedByEmployee,
+   getEmployeeListing, getStockQuantityForIngredient,
+  getAllSales, addCommentOnEmployee, getSalesFromProducts, 
+  addOrder, addCustomer, addIngredientToStock, updateEmployeeData, 
+  updateCustomerData, updateStockQuantityForIngredient, getEmployee,
+  getCustomer
+} = require('./queries');
 
 const app = new Koa();
 
@@ -29,6 +35,20 @@ router
   .get('/getSalesFromProducts/', getSalesFromProducts)
 
   .post('/addOrder', addOrder)
+
+  .post('/addCustomer/', addCustomer)
+
+  .post('/addIngredientToStock/', addIngredientToStock)
+
+  .post('/updateEmployeeData/', updateEmployeeData)
+
+  .post('/updateCustomerData/', updateCustomerData)
+
+  .post('/updateStockQuantityForIngredient', updateStockQuantityForIngredient)
+
+  .get('/getEmployee/:managerId/:employeeName', getEmployee)
+
+  .get('/getCustomer/:managerId/:customerName', getCustomer)
 
   .post('/addProduct/', addProduct);
 
