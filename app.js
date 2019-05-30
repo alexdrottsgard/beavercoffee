@@ -5,9 +5,13 @@ const koaRouter = require('koa-router');
 const Koa = require('koa');
 const router = koaRouter();
 
-const { getAll, addProduct, addEmployee,
-    getCustomerListing, getOrdersServedByEmployee,
-  } = require('./queries');
+const { getAll, addProduct, addEmployee, getOrdersServedByEmployee,
+  getEmployeeListing, getCustomerListing, getStockQuantityForIngredient,
+  getAllSales, addCommentOnEmployee, getSalesFromProducts,
+  addOrder, addCustomer, addIngredientToStock, updateEmployeeData,
+  updateCustomerData, updateStockQuantityForIngredient, getEmployee,
+  getCustomer
+} = require('./queries');
 
 const app = new Koa();
 
@@ -21,8 +25,36 @@ router
 
   .get('/getOrdersFromEmployee/:name/:managerId/:qStartDate/:qEndDate', getOrdersServedByEmployee)
 
+  .get('/getEmployeeListing/:managerId/:qStartDate/:qEndDate', getEmployeeListing)
+
+  .get('/getStockQuantityForIngredient/:managerId/:ingredientName', getStockQuantityForIngredient)
+
+  .get('/getAllSales/:managerId/:startDate/:endDate', getAllSales)
+
+  .get('/getEmployee/:managerId/:employeeName', getEmployee)
+
+  .get('/getCustomer/:managerId/:customerName', getCustomer)
+
   .get('/getCustomerListing/:managerId/:qStartDate/:qEndDate', getCustomerListing)
+
+  .get('/getSalesFromProducts/', getSalesFromProducts)
+
+  .post('/addComment/', addCommentOnEmployee)
+
+  .post('/addOrder', addOrder)
+
+  .post('/addCustomer/', addCustomer)
+
+  .post('/addIngredientToStock/', addIngredientToStock)
+
+  .post('/updateEmployeeData/', updateEmployeeData)
+
+  .post('/updateCustomerData/', updateCustomerData)
+
+  .post('/updateStockQuantityForIngredient', updateStockQuantityForIngredient)
+
   .post('/addEmployee/', addEmployee)
+
   .post('/addProduct/', addProduct);
 
   app.use(async (ctx, next) => {
