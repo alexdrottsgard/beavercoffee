@@ -73,7 +73,7 @@ async function addProduct(ctx) {
  * Query parameters are:
  * EmployerID (the location manager or corporate sales manager that requests the info)
  * EmployeeName (the employee which orders to get)
- * @param {query parameters} ctx
+ * @param {Koa.Context} ctx - contains the entire request and response context
  */
 async function getOrdersServedByEmployee(ctx) {
   const session = driver.session();
@@ -132,7 +132,7 @@ async function getProductsFromOrder(orderId) {
  * Query parameters are:
  * managerId (so you only get employees that works at the same location as him)
  * qStartDate and qEndDate (to only get employees that worked sometime during this time period)
- * @param {query parameters} ctx
+ * @param {Koa.Context} ctx - contains the entire request and response context
  */
 async function getEmployeeListing(ctx) {
   const session = driver.session();
@@ -179,7 +179,7 @@ async function getEmployeeListing(ctx) {
  * query parameters are:
  * managerId (only look at ingredients in his locations stock)
  * ingredientName
- * @param {query parameters} ctx
+ * @param {Koa.Context} ctx - contains the entire request and response context
  */
 async function getStockQuantityForIngredient(ctx) {
   const session = driver.session();
@@ -205,7 +205,7 @@ async function getStockQuantityForIngredient(ctx) {
  * Query parameters are:
  * managerId (only get sales from his locations)
  * startDate and endDate (only get sales that was created between these dates)
- * @param {query parameters} ctx
+ * @param {Koa.Context} ctx - contains the entire request and response context
  */
 async function getAllSales(ctx) {
   const session = driver.session();
@@ -249,7 +249,7 @@ async function getAllSales(ctx) {
  * employerId (the employer that makes the comment)
  * employeeName (the employee he comments on)
  * comment (the comment)
- * @param {request body} ctx
+ * @param {Koa.Context} ctx - contains the entire request and response context
  */
 async function addCommentOnEmployee(ctx) {
   const session = driver.session();
@@ -286,7 +286,7 @@ async function addCommentOnEmployee(ctx) {
  * managerId (get only sales from his location)
  * products (a list of product names)
  * qStartDate and qEndDate (the specified time period)
- * @param {request body} ctx
+ * @param {Koa.Context} ctx - contains the entire request and response context
  */
 async function getSalesFromProducts(ctx) {
   const session = driver.session();
@@ -342,7 +342,7 @@ async function getSalesFromProducts(ctx) {
  * price (price for this product)
  * amount (how many of this product the customer ordered)
  * list of ingredients for this product
- * @param {request body} ctx
+ * @param {Koa.Context} ctx - contains the entire request and response context
  */
 async function addOrder(ctx) {
   const session = driver.session();
