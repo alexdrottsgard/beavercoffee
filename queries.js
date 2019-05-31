@@ -208,7 +208,8 @@ async function getStockQuantityForIngredient(ctx) {
  */
 async function getAllSales(ctx) {
   const session = driver.session();
-  const { managerId, startDate, endDate } = ctx.params;
+  const { query } = ctx.request;
+  const { managerId, startDate, endDate } = query;
   const statement =
     `MATCH (man:Employer)-[:WORKS_AT]->(c:CoffeeShop)<-[:WORKS_AT]-()
     -[:ENTERED]->(o:Order) WHERE ID(man) = ${managerId} RETURN o,c,man`;

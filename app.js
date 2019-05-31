@@ -29,7 +29,7 @@ router
 
   .get('/getStockQuantityForIngredient', getStockQuantityForIngredient)
 
-  .get('/getAllSales/:managerId/:startDate/:endDate', getAllSales)
+  .get('/getAllSales', getAllSales)
 
   .get('/getEmployee/:managerId/:employeeName', getEmployee)
 
