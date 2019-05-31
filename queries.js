@@ -76,8 +76,11 @@ async function addProduct(ctx) {
  */
 async function getOrdersServedByEmployee(ctx) {
   const session = driver.session();
-  const { name, managerId, qStartDate, qEndDate } = ctx.params;
-  const statement = `MATCH (man: Employer)-[:WORKS_AT]->(:CoffeeShop)<-[:WORKS_AT]-(:Employee {name: '${name}'})-[:ENTERED]->(o:Order) WHERE ID(man)=${Number(managerId)} RETURN o`;
+  const { query } = ctx.request;
+  const { employeeName, managerId, startDate, endDate } = query;
+  const statement =
+    `MATCH (man: Employer)-[:WORKS_AT]->(:CoffeeShop)<-[:WORKS_AT]-
+    (:Employee {name: '${employeeName}'})-[:ENTERED]->(o:Order) WHERE ID(man)=${managerId} RETURN o`;
   const result = await session.run(statement);
   session.close();
 
@@ -90,7 +93,7 @@ async function getOrdersServedByEmployee(ctx) {
     const orderProperties = element.get('o').properties;
     const orderCreated = `${orderProperties.createdAt.year.low}-${orderProperties.createdAt.month.low}-${orderProperties.createdAt.day.low}`;
 
-    if (orderCreated.localeCompare(qStartDate) != -1 && orderCreated.localeCompare(qEndDate) != 1) {
+    if (orderCreated.localeCompare(startDate) != -1 && orderCreated.localeCompare(endDate) != 1) {
       orders.push({
         id: orderId,
         totalPrice: totalPrice,

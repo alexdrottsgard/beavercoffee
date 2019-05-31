@@ -23,7 +23,7 @@ router
 
   .get('/', getAll)
 
-  .get('/getOrdersFromEmployee/:name/:managerId/:qStartDate/:qEndDate', getOrdersServedByEmployee)
+  .get('/getOrdersFromEmployee', getOrdersServedByEmployee)
 
   .get('/getEmployeeListing/:managerId/:qStartDate/:qEndDate', getEmployeeListing)
 
