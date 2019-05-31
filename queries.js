@@ -182,7 +182,8 @@ async function getEmployeeListing(ctx) {
  */
 async function getStockQuantityForIngredient(ctx) {
   const session = driver.session();
-  const { managerId, ingredientName } = ctx.params;
+  const { query } = ctx.request;
+  const { managerId, ingredientName } = query;
   const statement =
     `MATCH (man:Employer)-[:WORKS_AT]->(:CoffeeShop)-[:HAS]->
     (:Stock)-[r:HAS]->(i:Ingredient {name: '${ingredientName}'})

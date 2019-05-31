@@ -27,7 +27,7 @@ router
 
   .get('/getEmployeeListing', getEmployeeListing)
 
-  .get('/getStockQuantityForIngredient/:managerId/:ingredientName', getStockQuantityForIngredient)
+  .get('/getStockQuantityForIngredient', getStockQuantityForIngredient)
 
   .get('/getAllSales/:managerId/:startDate/:endDate', getAllSales)
 
