@@ -67,4 +67,5 @@ router
   }
 });
 app.use(router.routes()).use(router.allowedMethods());
-app.listen(8888);
+app.listen(process.env.PORT || 8080);
+console.info('App running');
