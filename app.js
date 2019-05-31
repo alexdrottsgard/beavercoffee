@@ -23,19 +23,19 @@ router
 
   .get('/', getAll)
 
-  .get('/getOrdersFromEmployee/:name/:managerId/:qStartDate/:qEndDate', getOrdersServedByEmployee)
+  .get('/getOrdersFromEmployee', getOrdersServedByEmployee)
 
-  .get('/getEmployeeListing/:managerId/:qStartDate/:qEndDate', getEmployeeListing)
+  .get('/getEmployeeListing', getEmployeeListing)
 
-  .get('/getStockQuantityForIngredient/:managerId/:ingredientName', getStockQuantityForIngredient)
+  .get('/getStockQuantityForIngredient', getStockQuantityForIngredient)
 
-  .get('/getAllSales/:managerId/:startDate/:endDate', getAllSales)
+  .get('/getAllSales', getAllSales)
 
-  .get('/getEmployee/:managerId/:employeeName', getEmployee)
+  .get('/getEmployee', getEmployee)
 
-  .get('/getCustomer/:managerId/:customerName', getCustomer)
+  .get('/getCustomer', getCustomer)
 
-  .get('/getCustomerListing/:managerId/:qStartDate/:qEndDate', getCustomerListing)
+  .get('/getCustomerListing', getCustomerListing)
 
   .get('/getSalesFromProducts/', getSalesFromProducts)
 

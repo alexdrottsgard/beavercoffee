@@ -29,7 +29,8 @@ async function getAll(ctx) {
 
 async function getCustomerListing(ctx) {
   const session = driver.session();
-  const { managerId, qStartDate, qEndDate } = ctx.params;
+  const { query } = ctx.request;
+  const { managerId, startDate, endDate } = query;
   const statement =
     `MATCH (c:Customer)-[:MEMBER_OF]->(:CoffeeShop)<-[:WORKS_AT]-(man:Employer)
     WHERE ID(man) = ${managerId} RETURN c`;
@@ -40,7 +41,7 @@ async function getCustomerListing(ctx) {
     let joinDate = element.get('c').properties.joinDate.year.low + '-' +
     element.get('c').properties.joinDate.month.low + '-' +
     element.get('c').properties.joinDate.day.low;
-    if (joinDate.localeCompare(qStartDate) != -1 && joinDate.localeCompare(qEndDate) != 1) {
+    if (joinDate.localeCompare(startDate) != -1 && joinDate.localeCompare(endDate) != 1) {
       returnList.push(
         {
           name: element.get('c').properties.name,
@@ -76,8 +77,11 @@ async function addProduct(ctx) {
  */
 async function getOrdersServedByEmployee(ctx) {
   const session = driver.session();
-  const { name, managerId, qStartDate, qEndDate } = ctx.params;
-  const statement = `MATCH (man: Employer)-[:WORKS_AT]->(:CoffeeShop)<-[:WORKS_AT]-(:Employee {name: '${name}'})-[:ENTERED]->(o:Order) WHERE ID(man)=${Number(managerId)} RETURN o`;
+  const { query } = ctx.request;
+  const { employeeName, managerId, startDate, endDate } = query;
+  const statement =
+    `MATCH (man: Employer)-[:WORKS_AT]->(:CoffeeShop)<-[:WORKS_AT]-
+    (:Employee {name: '${employeeName}'})-[:ENTERED]->(o:Order) WHERE ID(man)=${managerId} RETURN o`;
   const result = await session.run(statement);
   session.close();
 
@@ -90,7 +94,7 @@ async function getOrdersServedByEmployee(ctx) {
     const orderProperties = element.get('o').properties;
     const orderCreated = `${orderProperties.createdAt.year.low}-${orderProperties.createdAt.month.low}-${orderProperties.createdAt.day.low}`;
 
-    if (orderCreated.localeCompare(qStartDate) != -1 && orderCreated.localeCompare(qEndDate) != 1) {
+    if (orderCreated.localeCompare(startDate) != -1 && orderCreated.localeCompare(endDate) != 1) {
       orders.push({
         id: orderId,
         totalPrice: totalPrice,
@@ -132,7 +136,8 @@ async function getProductsFromOrder(orderId) {
  */
 async function getEmployeeListing(ctx) {
   const session = driver.session();
-  const { managerId, qStartDate, qEndDate } = ctx.params;
+  const { query } = ctx.request;
+  const { managerId, startDate, endDate } = query;
   const statement = `
     MATCH (man:Employer)-[:WORKS_AT]->(:CoffeeShop)<-[:WORKS_AT]-(e:Employee)
     WHERE ID(man) = ${managerId} RETURN e`;
@@ -143,23 +148,23 @@ async function getEmployeeListing(ctx) {
       //For all employees returned
   result.records.forEach(element => {
     // (Fullösning) convert datetime object to string so we can compare employees startDate with the query dates
-    let startDate = element.get("e").properties.startDate.year.low +
+    let employeeStartDate = element.get("e").properties.startDate.year.low +
     '-' + element.get("e").properties.startDate.month.low + '-' +
     element.get("e").properties.startDate.day.low;
 
-    let endDate = element.get("e").properties.endDate.year.low +
+    let employeeEndDate = element.get("e").properties.endDate.year.low +
     '-' + element.get("e").properties.endDate.month.low + '-' +
     element.get("e").properties.endDate.day.low;
 
     // If employees startDate is between the query dates, create and add employee object in return list
-    if (startDate.localeCompare(qStartDate) != -1 && startDate.localeCompare(qEndDate) != 1) {
+    if (employeeStartDate.localeCompare(startDate) != -1 && employeeEndDate.localeCompare(endDate) != 1) {
       listReturn.push(
         {
           name: element.get("e").properties.name,
           SSN: element.get("e").properties.SSN,
           percentage: element.get("e").properties.percentage,
-          start_date: startDate,
-          end_date: endDate
+          start_date: employeeStartDate,
+          end_date: employeeEndDate
         }
       )
     }
@@ -178,7 +183,8 @@ async function getEmployeeListing(ctx) {
  */
 async function getStockQuantityForIngredient(ctx) {
   const session = driver.session();
-  const { managerId, ingredientName } = ctx.params;
+  const { query } = ctx.request;
+  const { managerId, ingredientName } = query;
   const statement =
     `MATCH (man:Employer)-[:WORKS_AT]->(:CoffeeShop)-[:HAS]->
     (:Stock)-[r:HAS]->(i:Ingredient {name: '${ingredientName}'})
@@ -203,7 +209,8 @@ async function getStockQuantityForIngredient(ctx) {
  */
 async function getAllSales(ctx) {
   const session = driver.session();
-  const { managerId, startDate, endDate } = ctx.params;
+  const { query } = ctx.request;
+  const { managerId, startDate, endDate } = query;
   const statement =
     `MATCH (man:Employer)-[:WORKS_AT]->(c:CoffeeShop)<-[:WORKS_AT]-()
     -[:ENTERED]->(o:Order) WHERE ID(man) = ${managerId} RETURN o,c,man`;
@@ -489,7 +496,8 @@ async function addEmployee(ctx) {
 
 async function getEmployee(ctx) {
   const session = driver.session();
-  const { managerId, employeeName} = ctx.params;
+  const { query } = ctx.request;
+  const { managerId, employeeName } = query;
   const statement =
     `MATCH (man: Employer)-[:WORKS_AT]->(:CoffeeShop)
     <-[:WORKS_AT]-(e:Employee {name: '${employeeName}'}) WHERE ID(man) = ${managerId} RETURN e`;
@@ -501,7 +509,8 @@ async function getEmployee(ctx) {
 
 async function getCustomer(ctx) {
   const session = driver.session();
-  const { managerId, customerName } = ctx.params;
+  const { query } = ctx.request;
+  const { managerId, customerName } = query;
   const statement =
     `MATCH (man: Employer)-[:WORKS_AT]->(:CoffeeShop)
     <-[:MEMBER_OF]-(c:Customer {name: '${customerName}'}) WHERE ID(man) = ${managerId} RETURN c`;
