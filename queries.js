@@ -29,7 +29,8 @@ async function getAll(ctx) {
 
 async function getCustomerListing(ctx) {
   const session = driver.session();
-  const { managerId, qStartDate, qEndDate } = ctx.params;
+  const { query } = ctx.request;
+  const { managerId, startDate, endDate } = query;
   const statement =
     `MATCH (c:Customer)-[:MEMBER_OF]->(:CoffeeShop)<-[:WORKS_AT]-(man:Employer)
     WHERE ID(man) = ${managerId} RETURN c`;
@@ -40,7 +41,7 @@ async function getCustomerListing(ctx) {
     let joinDate = element.get('c').properties.joinDate.year.low + '-' +
     element.get('c').properties.joinDate.month.low + '-' +
     element.get('c').properties.joinDate.day.low;
-    if (joinDate.localeCompare(qStartDate) != -1 && joinDate.localeCompare(qEndDate) != 1) {
+    if (joinDate.localeCompare(startDate) != -1 && joinDate.localeCompare(endDate) != 1) {
       returnList.push(
         {
           name: element.get('c').properties.name,

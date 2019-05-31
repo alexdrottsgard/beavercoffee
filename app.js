@@ -35,7 +35,7 @@ router
 
   .get('/getCustomer', getCustomer)
 
-  .get('/getCustomerListing/:managerId/:qStartDate/:qEndDate', getCustomerListing)
+  .get('/getCustomerListing', getCustomerListing)
 
   .get('/getSalesFromProducts/', getSalesFromProducts)
 
