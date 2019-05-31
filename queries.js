@@ -135,7 +135,8 @@ async function getProductsFromOrder(orderId) {
  */
 async function getEmployeeListing(ctx) {
   const session = driver.session();
-  const { managerId, qStartDate, qEndDate } = ctx.params;
+  const { query } = ctx.request;
+  const { managerId, startDate, endDate } = query;
   const statement = `
     MATCH (man:Employer)-[:WORKS_AT]->(:CoffeeShop)<-[:WORKS_AT]-(e:Employee)
     WHERE ID(man) = ${managerId} RETURN e`;
@@ -146,23 +147,23 @@ async function getEmployeeListing(ctx) {
       //For all employees returned
   result.records.forEach(element => {
     // (Fullösning) convert datetime object to string so we can compare employees startDate with the query dates
-    let startDate = element.get("e").properties.startDate.year.low +
+    let employeeStartDate = element.get("e").properties.startDate.year.low +
     '-' + element.get("e").properties.startDate.month.low + '-' +
     element.get("e").properties.startDate.day.low;
 
-    let endDate = element.get("e").properties.endDate.year.low +
+    let employeeEndDate = element.get("e").properties.endDate.year.low +
     '-' + element.get("e").properties.endDate.month.low + '-' +
     element.get("e").properties.endDate.day.low;
 
     // If employees startDate is between the query dates, create and add employee object in return list
-    if (startDate.localeCompare(qStartDate) != -1 && startDate.localeCompare(qEndDate) != 1) {
+    if (employeeStartDate.localeCompare(startDate) != -1 && employeeEndDate.localeCompare(endDate) != 1) {
       listReturn.push(
         {
           name: element.get("e").properties.name,
           SSN: element.get("e").properties.SSN,
           percentage: element.get("e").properties.percentage,
-          start_date: startDate,
-          end_date: endDate
+          start_date: employeeStartDate,
+          end_date: employeeEndDate
         }
       )
     }
