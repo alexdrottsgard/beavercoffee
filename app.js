@@ -31,7 +31,7 @@ router
 
   .get('/getAllSales', getAllSales)
 
-  .get('/getEmployee/:managerId/:employeeName', getEmployee)
+  .get('/getEmployee', getEmployee)
 
   .get('/getCustomer/:managerId/:customerName', getCustomer)
 
