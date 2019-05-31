@@ -33,7 +33,7 @@ router
 
   .get('/getEmployee', getEmployee)
 
-  .get('/getCustomer/:managerId/:customerName', getCustomer)
+  .get('/getCustomer', getCustomer)
 
   .get('/getCustomerListing/:managerId/:qStartDate/:qEndDate', getCustomerListing)
 

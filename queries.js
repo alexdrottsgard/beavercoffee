@@ -508,7 +508,8 @@ async function getEmployee(ctx) {
 
 async function getCustomer(ctx) {
   const session = driver.session();
-  const { managerId, customerName } = ctx.params;
+  const { query } = ctx.request;
+  const { managerId, customerName } = query;
   const statement =
     `MATCH (man: Employer)-[:WORKS_AT]->(:CoffeeShop)
     <-[:MEMBER_OF]-(c:Customer {name: '${customerName}'}) WHERE ID(man) = ${managerId} RETURN c`;
