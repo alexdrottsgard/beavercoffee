@@ -485,9 +485,10 @@ async function addEmployee(ctx) {
     month: ${data.endDate.month},
     day: ${data.endDate.day}`;
 
-  const statement =
-    `CREATE (e:Employee { name: '${data.name}', SSN: '${data.SSN}', startDate: dateTime(),
-    endDate: dateTime({${endDate}}), percentage: ${data.percentage}}) RETURN e`;
+  const statement = `MATCH (man:Employer)-[:WORKS_AT]->(c:CoffeeShop) WHERE ID(man) = ${data.managerId}
+  CREATE (e:Employee { name: '${data.name}', SSN: '${data.SSN}', startDate: dateTime(),
+  endDate: dateTime({${endDate}}), percentage: ${data.percentage}})-[:WORKS_AT]->(c) RETURN e`;
+
   const result = await session.run(statement);
   session.close();
   ctx.body = result.records[0].get(0).toString();
